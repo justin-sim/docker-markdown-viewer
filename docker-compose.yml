@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  markdown-viewer:
+    build: .
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    volumes:
+      - markdown_data:/data
+
+volumes:
+  markdown_data:

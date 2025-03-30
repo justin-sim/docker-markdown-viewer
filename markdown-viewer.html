@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Viewer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        header {
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            margin: 0;
+            color: #2c3e50;
+        }
+        
+        .container {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+        }
+        
+        .editor-container, .preview-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .editor-header, .preview-header {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            font-weight: bold;
+        }
+        
+        #editor {
+            flex: 1;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 0 0 5px 5px;
+            resize: none;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        #preview {
+            flex: 1;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 0 0 5px 5px;
+            overflow: auto;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        /* Markdown styles */
+        #preview h1, #preview h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        
+        #preview code {
+            background-color: rgba(27, 31, 35, 0.05);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+        }
+        
+        #preview pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        
+        #preview blockquote {
+            padding: 0 1em;
+            color: #6a737d;
+            border-left: 0.25em solid #dfe2e5;
+            margin: 0;
+        }
+        
+        #preview table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 16px;
+        }
+        
+        #preview table th, #preview table td {
+            padding: 6px 13px;
+            border: 1px solid #dfe2e5;
+        }
+        
+        #preview table tr {
+            background-color: #fff;
+            border-top: 1px solid #c6cbd1;
+        }
+        
+        #preview table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+
+        /* Dark mode toggle */
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #6c757d;
+            color: white;
+            border-radius: 20px;
+            padding: 5px 15px;
+        }
+
+        /* Dark theme */
+        body.dark-theme {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+
+        body.dark-theme h1 {
+            color: #90caf9;
+        }
+
+        body.dark-theme .editor-header, 
+        body.dark-theme .preview-header {
+            background-color: #2c2c2c;
+            color: #e0e0e0;
+            border-color: #444;
+        }
+
+        body.dark-theme #editor,
+        body.dark-theme #preview {
+            background-color: #2c2c2c;
+            color: #e0e0e0;
+            border-color: #444;
+        }
+
+        body.dark-theme #preview code {
+            background-color: #3a3a3a;
+        }
+
+        body.dark-theme #preview pre {
+            background-color: #3a3a3a;
+        }
+
+        body.dark-theme #preview blockquote {
+            color: #a0a0a0;
+            border-left-color: #555;
+        }
+
+        body.dark-theme #preview table th, 
+        body.dark-theme #preview table td {
+            border-color: #444;
+        }
+
+        body.dark-theme #preview table tr {
+            background-color: #2c2c2c;
+            border-top-color: #444;
+        }
+
+        body.dark-theme #preview table tr:nth-child(2n) {
+            background-color: #3a3a3a;
+        }
+
+        /* Auto-save indicator */
+        .save-indicator {
+            margin-left: 10px;
+            font-size: 0.8em;
+            color: #6c757d;
+        }
+
+        body.dark-theme .save-indicator {
+            color: #a0a0a0;
+        }
+
+        /* File management section */
+        .file-management {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        body.dark-theme .file-management {
+            border-color: #444;
+        }
+
+        .file-list {
+            margin-top: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+
+        body.dark-theme .file-item {
+            border-bottom-color: #444;
+        }
+
+        .file-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        body.dark-theme .file-item:hover {
+            background-color: #3a3a3a;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Markdown Viewer</h1>
+        <p>Enter your Markdown content in the editor and see it rendered in real-time.</p>
+        <button class="theme-toggle" id="theme-toggle">Toggle Dark Mode</button>
+    </header>
+    
+    <div class="container">
+        <div class="editor-container">
+            <div class="editor-header">
+                Editor
+                <span class="save-indicator" id="save-indicator">Changes saved locally</span>
+            </div>
+            <textarea id="editor" placeholder="Enter your Markdown here..."># Welcome to Markdown Viewer
+
+This is a simple tool that lets you write Markdown and see it rendered in real-time.
+
+## Features
+
+- **Real-time preview**: See your changes as you type
+- **Syntax highlighting**: Code blocks are automatically highlighted
+- **Export options**: Save your rendered content as HTML
+- **Dark mode**: Toggle between light and dark themes
+- **Auto-save**: Your content is automatically saved in your browser
+- **Multiple documents**: Save and manage multiple markdown documents
+
+## Example Code
+
+```javascript
+function helloWorld() {
+    console.log("Hello, world!");
+}
+```
+
+## Example Table
+
+| Name | Description |
+|------|-------------|
+| Markdown | Lightweight markup language |
+| HTML | Standard markup language for web pages |
+
+## Example List
+
+1. First item
+2. Second item
+3. Third item
+   - Nested item 1
+   - Nested item 2
+
+> This is a blockquote. Markdown is a lightweight markup language with plain-text-formatting syntax.
+</textarea>
+        </div>
+        <div class="preview-container">
+            <div class="preview-header">Preview</div>
+            <div id="preview"></div>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button id="copy-html">Copy HTML</button>
+        <button id="download-html">Download as HTML</button>
+        <button id="clear">Clear Editor</button>
+        <button id="save-document">Save Document</button>
+    </div>
+
+    <div class="file-management">
+        <h3>Saved Documents</h3>
+        <input type="text" id="document-name" placeholder="Document name">
+        <button id="load-document">Load</button>
+        <button id="delete-document">Delete</button>
+        <div class="file-list" id="file-list">
+            <!-- Saved files will be listed here -->
+        </div>
+    </div>
+
+    <script>
+        // Initialize marked
+        marked.setOptions({
+            highlight: function(code, lang) {
+                if (lang && hljs.getLanguage(lang)) {
+                    return hljs.highlight(code, { language: lang }).value;
+                }
+                return hljs.highlightAuto(code).value;
+            },
+            breaks: true,
+            gfm: true
+        });
+
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+        const copyHtmlBtn = document.getElementById('copy-html');
+        const downloadHtmlBtn = document.getElementById('download-html');
+        const clearBtn = document.getElementById('clear');
+        const saveBtn = document.getElementById('save-document');
+        const loadBtn = document.getElementById('load-document');
+        const deleteBtn = document.getElementById('delete-document');
+        const documentNameInput = document.getElementById('document-name');
+        const fileList = document.getElementById('file-list');
+        const themeToggle = document.getElementById('theme-toggle');
+        const saveIndicator = document.getElementById('save-indicator');
+        
+        // Current document name
+        let currentDocument = 'default';
+        
+        // Initialize document
+        initDocument();
+        updateFileList();
+        
+        // Initial render
+        renderMarkdown();
+        
+        // Auto-save timer
+        let saveTimeout;
+        
+        // Event listeners
+        editor.addEventListener('input', () => {
+            renderMarkdown();
+            showUnsavedChanges();
+            
+            // Auto-save after 1 second of inactivity
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                saveDocumentContent(currentDocument, editor.value);
+                showSaved();
+            }, 1000);
+        });
+        
+        copyHtmlBtn.addEventListener('click', copyHtml);
+        downloadHtmlBtn.addEventListener('click', downloadHtml);
+        clearBtn.addEventListener('click', clearEditor);
+        saveBtn.addEventListener('click', saveDocument);
+        loadBtn.addEventListener('click', loadDocument);
+        deleteBtn.addEventListener('click', deleteDocument);
+        themeToggle.addEventListener('click', toggleTheme);
+        
+        // Functions
+        function renderMarkdown() {
+            preview.innerHTML = marked.parse(editor.value);
+            // Apply syntax highlighting to code blocks
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+        }
+        
+        function copyHtml() {
+            const htmlContent = getFullHtml();
+            navigator.clipboard.writeText(htmlContent)
+                .then(() => alert('HTML copied to clipboard!'))
+                .catch(err => console.error('Error copying HTML:', err));
+        }
+        
+        function downloadHtml() {
+            const htmlContent = getFullHtml();
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentDocument || 'markdown-export'}.html`;
+            document.body.appendChild(a);
+            a.click();
+            
+            // Clean up
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 0);
+        }
+        
+        function clearEditor() {
+            if (confirm('Are you sure you want to clear the editor?')) {
+                editor.value = '';
+                renderMarkdown();
+                showUnsavedChanges();
+            }
+        }
+        
+        function saveDocument() {
+            const name = documentNameInput.value.trim();
+            if (!name) {
+                alert('Please enter a document name');
+                return;
+            }
+            
+            saveDocumentContent(name, editor.value);
+            currentDocument = name;
+            updateFileList();
+            documentNameInput.value = '';
+            showSaved();
+        }
+        
+        function loadDocument() {
+            const name = documentNameInput.value.trim();
+            if (!name) {
+                alert('Please enter a document name to load');
+                return;
+            }
+            
+            const content = localStorage.getItem(`markdown_${name}`);
+            if (content === null) {
+                alert(`Document "${name}" not found`);
+                return;
+            }
+            
+            editor.value = content;
+            currentDocument = name;
+            renderMarkdown();
+            documentNameInput.value = '';
+            showSaved();
+        }
+        
+        function deleteDocument() {
+            const name = documentNameInput.value.trim();
+            if (!name) {
+                alert('Please enter a document name to delete');
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to delete "${name}"?`)) {
+                localStorage.removeItem(`markdown_${name}`);
+                if (currentDocument === name) {
+                    currentDocument = 'default';
+                    initDocument();
+                }
+                updateFileList();
+                documentNameInput.value = '';
+            }
+        }
+        
+        function saveDocumentContent(name, content) {
+            localStorage.setItem(`markdown_${name}`, content);
+        }
+        
+        function initDocument() {
+            const defaultContent = localStorage.getItem(`markdown_${currentDocument}`);
+            if (defaultContent !== null) {
+                editor.value = defaultContent;
+            }
+        }
+        
+        function updateFileList() {
+            fileList.innerHTML = '';
+            
+            // Get all keys from localStorage that start with "markdown_"
+            const documents = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('markdown_')) {
+                    documents.push(key.substring(9)); // Remove "markdown_" prefix
+                }
+            }
+            
+            if (documents.length === 0) {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.textContent = 'No saved documents';
+                fileList.appendChild(emptyMessage);
+                return;
+            }
+            
+            documents.sort().forEach(name => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                
+                const fileName = document.createElement('span');
+                fileName.textContent = name;
+                
+                const actions = document.createElement('div');
+                
+                const loadAction = document.createElement('a');
+                loadAction.href = '#';
+                loadAction.textContent = 'Load';
+                loadAction.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    documentNameInput.value = name;
+                    loadDocument();
+                });
+                
+                const deleteAction = document.createElement('a');
+                deleteAction.href = '#';
+                deleteAction.textContent = 'Delete';
+                deleteAction.style.marginLeft = '10px';
+                deleteAction.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    documentNameInput.value = name;
+                    deleteDocument();
+                });
+                
+                actions.appendChild(loadAction);
+                actions.appendChild(deleteAction);
+                
+                fileItem.appendChild(fileName);
+                fileItem.appendChild(actions);
+                
+                fileList.appendChild(fileItem);
+            });
+        }
+        
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+            
+            // Save theme preference
+            const isDarkTheme = document.body.classList.contains('dark-theme');
+            localStorage.setItem('dark_theme', isDarkTheme ? 'true' : 'false');
+        }
+        
+        function showUnsavedChanges() {
+            saveIndicator.textContent = 'Unsaved changes';
+            saveIndicator.style.color = '#dc3545';
+        }
+        
+        function showSaved() {
+            saveIndicator.textContent = 'Changes saved locally';
+            saveIndicator.style.color = '#6c757d';
+            if (document.body.classList.contains('dark-theme')) {
+                saveIndicator.style.color = '#a0a0a0';
+            }
+        }
+        
+        function getFullHtml() {
+            return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${currentDocument || 'Markdown Export'}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+        }
+        
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        
+        blockquote {
+            padding: 0 1em;
+            color: #6a737d;
+            border-left: 0.25em solid #dfe2e5;
+            margin: 0;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 16px;
+        }
+        
+        table th, table td {
+            padding: 6px 13px;
+            border: 1px solid #dfe2e5;
+        }
+        
+        table tr {
+            background-color: #fff;
+            border-top: 1px solid #c6cbd1;
+        }
+        
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    ${preview.innerHTML}
+</body>
+</html>`;
+        }
+        
+        // Load saved theme preference
+        if (localStorage.getItem('dark_theme') === 'true') {
+            document.body.classList.add('dark-theme');
+        }
+    </script>
+</body>
+</html>
